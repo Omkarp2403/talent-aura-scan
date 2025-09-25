@@ -71,17 +71,35 @@ const Register = () => {
     setError("");
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      toast({
-        title: "Account created successfully!",
-        description: "Welcome to ResumeAI. You can now start screening resumes.",
-      });
+      // Import API dynamically to avoid circular imports
+      const { default: api } = await import("@/services/api");
       
-      navigate("/dashboard");
+      const registerData = {
+        username: data.username,
+        email: data.email,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        password: data.password,
+        password_confirm: data.confirmPassword,
+      };
+
+      const result = await api.auth.register(registerData);
+      
+      if (result.success) {
+        toast({
+          title: "Account created successfully!",
+          description: "Welcome to ResumeAI. You can now start screening resumes.",
+        });
+
+        // Redirect to login
+        setTimeout(() => {
+          navigate("/login");
+        }, 1500);
+      } else {
+        setError(result.message || "Registration failed. Please try again.");
+      }
     } catch (err) {
-      setError("An error occurred during registration. Please try again.");
+      setError("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }

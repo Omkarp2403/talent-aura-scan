@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,10 +23,54 @@ import {
   LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import api from "@/services/api";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [realStats, setRealStats] = useState(null);
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    // Check authentication
+    if (!api.utils.isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+    
+    // Get username
+    const storedUsername = api.utils.getUsername();
+    setUsername(storedUsername || "User");
+    
+    // Load dashboard data
+    loadDashboardData();
+  }, [navigate]);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const result = await api.cv.getRequirementSummary();
+      if (result.success) {
+        setRealStats(result.data);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    api.auth.logout();
+    navigate("/");
+  };
 
   const stats = [
     {
@@ -167,7 +211,7 @@ const Dashboard = () => {
                 variant="ghost" 
                 size="icon" 
                 className="hover:bg-primary/10"
-                onClick={() => navigate("/")}
+                onClick={handleLogout}
               >
                 <LogOut className="w-5 h-5" />
               </Button>
@@ -183,7 +227,7 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="mb-8 animate-fade-in-up">
           <h2 className="text-3xl font-bold font-poppins mb-2">
-            Welcome back, John! 👋
+            Welcome back, {username}! 👋
           </h2>
           <p className="text-muted-foreground text-lg">
             Here's what's happening with your resume screening today.
@@ -242,7 +286,10 @@ const Dashboard = () => {
               <Button variant="outline" size="icon" className="glass border-primary/20">
                 <Filter className="w-4 h-4" />
               </Button>
-              <Button className="bg-gradient-to-r from-primary to-secondary text-white">
+              <Button 
+                className="bg-gradient-to-r from-primary to-secondary text-white"
+                onClick={() => navigate("/job-selection")}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Job
               </Button>

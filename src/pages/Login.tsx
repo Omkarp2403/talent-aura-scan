@@ -34,18 +34,19 @@ const Login = () => {
     setError("");
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Mock successful login
-      if (data.username === "admin" && data.password === "password") {
+      // Import API dynamically to avoid circular imports
+      const { default: api } = await import("@/services/api");
+      
+      const result = await api.auth.authenticate(data.username, data.password);
+      
+      if (result.success) {
         toast({
           title: "Welcome back!",
           description: "You've successfully signed in to ResumeAI.",
         });
         navigate("/dashboard");
       } else {
-        setError("Invalid username or password. Please try again.");
+        setError(result.message || "Invalid username or password. Please try again.");
       }
     } catch (err) {
       setError("An error occurred during login. Please try again.");
